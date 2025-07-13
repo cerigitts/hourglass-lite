@@ -1,9 +1,42 @@
-# macOS / Python / VSCode
+# macOS
 .DS_Store
+
+# Python
 __pycache__/
 *.pyc
-venv/
-.vscode/
-.env
+*.pyo
+*.pyd
 *.log
+
+# Virtual environments
+venv/
+.env
+
+# VS Code
+.vscode/
+
+# Node (if ever used for tooling)
 node_modules/
+
+# Hourglass project-specific
+videos/*
+!videos/.gitkeep
+
+images/temp/*
+!images/temp/.gitkeep
+
+images/gif/*
+!images/gif/.gitkeep
+
+logs/*
+!logs/.gitkeep
+
+# Flask cache
+*.sqlite3
+instance/
+*.db
+
+# System files
+*.swp
+*.swo
+*.bak

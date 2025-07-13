@@ -1,24 +1,39 @@
-# Hourglass — GIF Compression Tool
+# Hourglass — GIF Compression & UI Upload Tool
 
-A precision-focused GIF generator built in Python. Extracts frames from video, estimates final size, and creates optimised GIFs with a dynamic FPS model based on compression efficiency.
+A precision-focused GIF generator with a sleek mobile-inspired UI. Combines a Flask backend with a responsive JavaScript frontend to convert videos into optimised GIFs using a dynamic FPS model and real-time terminal log streaming.
 
 ---
 
 ## Key Features
 
-- Extracts and resizes frames from video
-- Predicts GIF file size using a trained quadratic model
-- Automatically selects optimal FPS if target size is exceeded
-- Logs performance and retrains the model based on usage
-- Clean folder handling and overwrite-safe temp management
+- 🔁 Upload videos from file or live camera input (browser)
+- 🎞️ Extracts and resizes frames for optimised GIF output
+- 📉 Predicts final GIF size using a trained compression model
+- 🧠 Auto-adjusts FPS if target size is exceeded
+- 📊 Displays live terminal logs during processing
+- 🧼 Clean folder handling and overwrite-safe temp management
+- 🔁 Fully restartable UI without page refresh
+- 🎵 Optional audio toggle and animation polish
 
 ---
 
 ## Project Structure
 
 ```
-hourglass/
-├── main.py
+hourglass-lite/
+├── app.py                        # Flask backend
+├── main.py                       # Video-to-GIF logic
+├── templates/
+│   └── index.html                # UI structure
+├── static/
+│   ├── css/
+│   │   └── style.css             # Styling (mobile mockup, console panel, etc.)
+│   ├── js/
+│   │   └── script.js             # All frontend logic and animations
+│   ├── assets/
+│   │   └── background.gif        # Optional animated pixel art (if used)
+│   └── audio/
+│       └── music.mp3             # Optional ambient track
 ├── utils/
 │   ├── frame_extractor.py
 │   ├── gif_encoder.py
@@ -26,61 +41,69 @@ hourglass/
 ├── config/
 │   └── model_coeffs.json
 ├── logs/
-│   └── gif_data_log.csv
-├── videos/
+│   └── pipeline.log              # Real-time log streaming for frontend
+├── videos/                       # Uploaded video files
 ├── images/
-│   ├── temp/
-│   └── gif/
+│   ├── temp/                     # Temporary frames
+│   └── gif/                      # Final output GIFs
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
 ## Getting Started
 
-1. Install dependencies:
-   ```
+1. **Install dependencies**
+   ```bash
    pip install -r requirements.txt
    ```
 
-2. Run the tool:
-   ```
-   python main.py
+2. **Run the backend**
+   ```bash
+   python app.py
    ```
 
-3. Input video:  
-   Place files in the `videos/` folder  
-   Supported formats: .mp4, .mov, .avi, .mkv, .webm
+3. **Open the frontend**
+   - Serve `index.html` via Live Server or similar
+   - UI loads in a phone-style container and waits for input
 
-4. Output GIF:  
-   Created in `images/gif/`  
-   File is named as `video_fps.gif`
+4. **Upload a video**
+   - Use folder or camera icons to upload from file or webcam
+
+5. **Receive your GIF**
+   - Output saved in `images/gif/` as `video_fps.gif`
+
+---
+
+## API Endpoints
+
+- `POST /upload`  
+  Accepts video files as form data, starts pipeline asynchronously
+
+- `GET /logs`  
+  Streams the last 50 lines from `logs/pipeline.log` for UI console
 
 ---
 
 ## Compression Model
 
-Default compression ratio estimate:
-
-```
+```text
 compression_ratio = max(0.08, -0.000236 * fps² + 0.016632 * fps - 0.096541)
 ```
 
-- Model learns from actual GIF results over time
-- Automatically retrains after 5 entries in `gif_data_log.csv`
-- Can be manually edited via `config/model_coeffs.json`
+- Model updates after every 5 GIFs
+- Coefficients stored in `config/model_coeffs.json`
+- Data logs in `logs/gif_data_log.csv`
 
----
-
-## Resetting the Tool
-
-To reset:
-- Delete `logs/gif_data_log.csv` to clear history
-- Manually overwrite the model file if needed
+**To reset:**
+- Delete `gif_data_log.csv`
+- Optionally overwrite `model_coeffs.json`
 
 ---
 
 ## Author
 
-Developed by Ceri Gittins  
-LinkedIn: https://www.linkedin.com/in/ceri-gittins  
+Developed by **Ceri Gittins**  
+[LinkedIn →](https://www.linkedin.com/in/ceri-gittins)  
 #careertransition #learningbybuilding #backenddevelopment
