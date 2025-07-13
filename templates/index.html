@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hourglass</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../static/css/style.css" />
+</head>
+<body>
+  <div class="phone-mockup">
+    <div class="container">
+      <h1 class="hero-title">hourglass</h1>
+
+      <div class="console-panel">
+        <div class="hourglass-logo" style="display: none;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+               xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd"
+                  d="M18 2H6V4V8H8V10H10V12V14H8V16H6V20V22H18V20V16H16V14H14V12V10H16V8H18V4V2ZM16 8H14V10H10V8H8V4H16V8ZM14 14V16H16V20H8V16H10V14H14Z"
+                  fill="black"/>
+          </svg>
+        </div>
+
+        <div class="console-output">
+          <div class="text-wrapper">
+            <span class="typed-text"></span>
+            <span class="cursor">|</span>
+          </div>
+        </div>
+
+        <div id="video-overlay" style="display: none;">
+          <video id="camera-feed" autoplay playsinline></video>
+        </div>
+      </div>
+
+      <div class="terminal-console">
+        <pre id="terminal-output"></pre>
+      </div>
+
+      <div class="input-icons">
+        <button id="folder-btn" class="icon-button" aria-label="Folder" type="button">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+               xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd"
+                  d="M4 4H12V6H20H22V8L22 18V20L20 20H4L2 20V18V6V4H4ZM20 8H10V6H4V18H20V8Z"
+                  fill="#eee"/>
+          </svg>
+        </button>
+
+        <button id="camera-btn" class="icon-button" aria-label="Camera">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+               xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd"
+                  d="M4 4H2V20H4H20H22V4H20H4ZM20 6V18H4V6H20ZM8 8H6V10H8V8ZM12 8H16V10H12V8ZM10 10H12V14H10V10ZM16 14H18V10H16V14ZM16 14H12V16H16V14Z"
+                  fill="#eee"/>
+          </svg>
+        </button>
+      </div>
+
+      <button id="refresh-btn" class="icon-button" aria-label="Restart">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none"
+             xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M16 2H14V4H16V6H4V8H2V13H4V8H16V10H14V12H16V10H18V8H20V6H18V4H16V2ZM6 20H8V22H10V20H8V18H20V16H22V11H20V16H8V14H10V12H8V14H6V16H4V18H6V20Z"
+                fill="#eee"/>
+        </svg>
+      </button>
+
+      <button id="volume-btn" class="icon-button" aria-label="Toggle volume">
+        <svg id="volume-on-icon" width="24" height="24" viewBox="0 0 24 24"
+             fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M11 2H13V22H11V20H9V18H11V6H9V4H11V2ZM7 8V6H9V8H7ZM7 16H5H3V14V10V8H5H7V10H5V14H7V16ZM7 16V18H9V16H7ZM17 10H15V14H17V10ZM19 8H21V16H19V8ZM19 16V18H15V16H19ZM19 6V8H15V6H19Z"
+                fill="#eee"/>
+        </svg>
+        <svg id="volume-off-icon" width="24" height="24" viewBox="0 0 24 24"
+             fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+          <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M13 2H11V4H9V6H7V8H5H3V10V14V16H5H7V18H9V20H11V22H13V2ZM9 18V16H7V14H5V10H7V8H9V6H11V18H9ZM19.0002 11.2233H17.0005V9.22327H15.0005V11.2233H17.0002V13.2233L15.0005 13.2233V15.2233H17.0005V13.2233L19.0002 13.2233V15.2233H21.0002V13.2233L19.0002 13.2233V11.2233ZM19.0002 11.2233H21.0002V9.22327H19.0002V11.2233Z"
+                fill="#eee"/>
+        </svg>
+      </button>
+
+      <input type="file" id="file-input" accept="video/*" style="display: none;" />
+      <audio id="bg-audio" src="../static/audio/music.mp3" loop preload="auto" style="display: none;"></audio>
+    </div>
+  </div>
+
+  <script src="../static/js/script.js" defer></script>
+</body>
+</html>
