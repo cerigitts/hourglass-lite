@@ -1,0 +1,9 @@
+flask
+flask-cors
+werkzeug
+numpy
+opencv-python
+pillow
+scikit-learn
+matplotlib
+pandas
