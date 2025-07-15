@@ -232,9 +232,10 @@ window.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => typeText(text, cb, i + 1), 60);
     } else {
       isTyping = false;
-      cb();
+      if (typeof cb === "function") cb();
     }
   }
+  
 
   if ('ontouchstart' in window) {
     document.querySelectorAll('.icon-button').forEach(btn => {
