@@ -36,7 +36,7 @@ def run_pipeline_async(video_name):
     def target():
         with open(LOG_FILE, "w") as log_file:
             process = subprocess.Popen(
-                ["/Users/cerigittins/Documents/GitHub/hourglass-lite/venv/bin/python", "main.py"],
+                ["python3", "main.py"],
                 stdin=subprocess.PIPE,
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
