@@ -20,7 +20,7 @@ LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 # Routes for landing and index pages
 @app.route("/")
 def landing():
-    return render_template("landing.html")
+    return render_template("index.html")
 
 @app.route("/index")
 def index():
