@@ -9,17 +9,12 @@ SUPPORTED_EXTS = [".mp4", ".mov", ".avi", ".mkv", ".webm"]
 
 def extract_frames(video_name, videos_folder=Path("videos"), images_folder=Path("images"),
                    max_width=640, max_height=480, selected_indices=None):
-    video_path = None
-    for ext in SUPPORTED_EXTS:
-        candidate = videos_folder / f"{video_name}{ext}"
-        if candidate.exists():
-            video_path = candidate
-            break
-
-    if not video_path:
+    candidate = videos_folder / video_name
+    if not candidate.exists():
         print(f"no video found for '{video_name}' in '{videos_folder}'")
         return None
 
+    video_path = candidate
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
         print("failed to open video.")
@@ -35,13 +30,12 @@ def extract_frames(video_name, videos_folder=Path("videos"), images_folder=Path(
     new_w, new_h = int(width * scale), int(height * scale)
 
     output_folder = images_folder / video_name
+    output_folder.mkdir(parents=True, exist_ok=True)
 
     # remove old frames if re-extracting selected frames
-    if selected_indices and output_folder.exists():
+    if selected_indices:
         for f in output_folder.glob("*.png"):
             f.unlink()
-
-    output_folder.mkdir(parents=True, exist_ok=True)
 
     frame_files = []
     idx = 0
@@ -54,8 +48,7 @@ def extract_frames(video_name, videos_folder=Path("videos"), images_folder=Path(
 
         if (selected_set is None) or (idx in selected_set):
             resized = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
-            frame_index = len(frame_files)
-            out_path = output_folder / f"frame_{frame_index:05d}.png"
+            out_path = output_folder / f"frame_{idx:05d}.png"
             cv2.imwrite(str(out_path), resized)
             frame_files.append(out_path)
 

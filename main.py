@@ -28,8 +28,12 @@ MAX_FPS = 50
 MAX_GIF_SIZE_MB = 20
 UPDATE_THRESHOLD = 5
 
-# auto-detect dev mode based on terminal or pipe
 USE_DEV_MODE = sys.stdin.isatty()
+DEBUG = False  # toggle this to True to see internal logs
+
+def dbg(msg):
+    if DEBUG:
+        print(f"[main] {msg}")
 
 def load_model_coefficients(config_path=CONFIG_PATH):
     if config_path.exists():
@@ -82,13 +86,22 @@ def run_pipeline():
     if USE_DEV_MODE:
         video_path = DEV_VIDEO_PATH
         video_name = video_path.stem
-        print(f"debug mode: using {video_path.name}")
+        dbg(f"debug mode: using {video_path.name}")
     else:
-        video_name = sys.stdin.readline().strip()
-        video_path = None
+        video_path = Path(sys.stdin.readline().strip())
+        video_name = video_path.stem
+        dbg(f"received filename: {video_name}")
+        dbg(f"resolved full path: {video_path.resolve()}")
+        dbg(f"exists? {video_path.exists()}")
+        dbg(f"videos_folder will be: videos/")
 
-    info = extract_frames(video_name, images_folder=TEMP_IMAGES_FOLDER,
-                          videos_folder=DEV_VIDEO_PATH.parent if USE_DEV_MODE else Path("videos"))
+    dbg(f"calling extract_frames with: {video_name}")
+    info = extract_frames(
+        video_name,
+        images_folder=TEMP_IMAGES_FOLDER,
+        videos_folder=Path("videos") if not USE_DEV_MODE else DEV_VIDEO_PATH.parent
+    )
+
     if not info:
         return
 
@@ -116,9 +129,19 @@ def run_pipeline():
     if TEMP_IMAGES_FOLDER.exists():
         shutil.rmtree(TEMP_IMAGES_FOLDER)
 
-    selected = list(np.linspace(0, info["frame_count"] - 1, int(round(info["duration"] * target_fps)), dtype=int))
-    info = extract_frames(video_name, images_folder=TEMP_IMAGES_FOLDER, selected_indices=selected,
-                          videos_folder=DEV_VIDEO_PATH.parent if USE_DEV_MODE else Path("videos"))
+    selected = list(np.linspace(
+        0, info["frame_count"] - 1,
+        int(round(info["duration"] * target_fps)),
+        dtype=int
+    ))
+
+    dbg("calling extract_frames again with selected frames")
+    info = extract_frames(
+        video_name,
+        images_folder=TEMP_IMAGES_FOLDER,
+        selected_indices=selected,
+        videos_folder=Path("videos") if not USE_DEV_MODE else DEV_VIDEO_PATH.parent
+    )
 
     print(f"expected frames: {len(selected)}")
     print(f"actual extracted: {len(info['frame_files'])}")

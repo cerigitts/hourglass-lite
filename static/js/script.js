@@ -23,11 +23,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const terminalOutput  = document.getElementById("terminal-output");
   const terminalBlock   = document.querySelector(".terminal-console");
 
-  // New seamless pixel rain effect
   (() => {
     const canvas = document.getElementById('rain');
     const ctx = canvas.getContext('2d');
-
     let drops = [];
     const maxDrops = 200;
     const spawnPerFrame = 4;
@@ -55,17 +53,14 @@ window.addEventListener("DOMContentLoaded", () => {
       ctx.font = 'bold 9px monospace';
       ctx.textBaseline = 'top';
 
-      // Spawn a few new drops each frame, capped
       for (let i = 0; i < spawnPerFrame; i++) {
         if (drops.length < maxDrops) {
           drops.push(createDrop());
         }
       }
 
-      // Move and draw all drops
       for (const drop of drops) {
         drop.y += drop.speed;
-
         if (drop.y > canvas.height) {
           drop.y = 0;
           drop.x = Math.floor(Math.random() * canvas.width);
@@ -85,7 +80,6 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Expose animate function so we can control when to start it
     window.startRainAnimation = function animate(time = 0) {
       drawDrops(time);
       requestAnimationFrame(animate);
@@ -97,7 +91,6 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     resize();
-    // No automatic start here — wait for panel animation
   })();
 
   insertBtn.addEventListener("click", () => {
@@ -114,7 +107,6 @@ window.addEventListener("DOMContentLoaded", () => {
     landing.style.display = "none";
     appContainer.style.display = "block";
     adjustContainerHeight();
-
     title.style.animation = "none";
     void title.offsetWidth;
     title.style.animation = "fadeInOut 2.4s ease-in-out 1s forwards";
@@ -197,8 +189,6 @@ window.addEventListener("DOMContentLoaded", () => {
   panel.addEventListener("animationend", () => {
     cursor.style.display = "inline-block";
     setTimeout(startTypingSequence, 400);
-
-    // Start the rain animation now
     window.startRainAnimation();
   });
 
@@ -235,19 +225,18 @@ window.addEventListener("DOMContentLoaded", () => {
       if (typeof cb === "function") cb();
     }
   }
-  
 
   if ('ontouchstart' in window) {
     document.querySelectorAll('.icon-button').forEach(btn => {
-      btn.addEventListener('touchstart', (e) => e.currentTarget.classList.add('pressed'));
-      btn.addEventListener('touchend', (e) => e.currentTarget.classList.remove('pressed'));
-      btn.addEventListener('touchcancel', (e) => e.currentTarget.classList.remove('pressed'));
+      btn.addEventListener('touchstart', e => e.currentTarget.classList.add('pressed'));
+      btn.addEventListener('touchend', e => e.currentTarget.classList.remove('pressed'));
+      btn.addEventListener('touchcancel', e => e.currentTarget.classList.remove('pressed'));
     });
   } else {
     document.querySelectorAll('.icon-button').forEach(btn => {
-      btn.addEventListener('mousedown', (e) => e.currentTarget.classList.add('pressed'));
-      btn.addEventListener('mouseup', (e) => e.currentTarget.classList.remove('pressed'));
-      btn.addEventListener('mouseleave', (e) => e.currentTarget.classList.remove('pressed'));
+      btn.addEventListener('mousedown', e => e.currentTarget.classList.add('pressed'));
+      btn.addEventListener('mouseup', e => e.currentTarget.classList.remove('pressed'));
+      btn.addEventListener('mouseleave', e => e.currentTarget.classList.remove('pressed'));
     });
   }
 
@@ -337,8 +326,9 @@ window.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData();
       formData.append("video", file);
 
-      // Dynamically use the correct URL based on the environment
-      const apiUrl = window.location.hostname === "127.0.0.1" ? "http://127.0.0.1:5000" : "http://hourglass-lite-env.eba-cj44iamr.eu-west-2.elasticbeanstalk.com";
+      const apiUrl = window.location.hostname === "127.0.0.1"
+        ? "http://127.0.0.1:5000"
+        : "http://hourglass-lite-env.eba-cj44iamr.eu-west-2.elasticbeanstalk.com";
 
       fetch(`${apiUrl}/upload`, {
         method: "POST",
@@ -348,12 +338,13 @@ window.addEventListener("DOMContentLoaded", () => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
-        .then(() => {
+        .then((data) => {
+          const sessionId = data.session_id;
           typeText("Script running...", () => {
             logo.style.display = "block";
             logo.classList.add("spin");
             terminalBlock.style.display = "block";
-            startPollingLogs();
+            startPollingLogs(sessionId);
           });
         })
         .catch((err) => {
@@ -400,32 +391,32 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function startPollingLogs() {
+  function startPollingLogs(sessionId) {
     pollingLogs = true;
     displayedLines = [];
-  
+
+    const logsUrlBase = window.location.hostname === "127.0.0.1"
+      ? "http://127.0.0.1:5000"
+      : "http://hourglass-lite-env.eba-cj44iamr.eu-west-2.elasticbeanstalk.com";
+
     pollInterval = setInterval(async () => {
       try {
-        const logsUrl = window.location.hostname === "127.0.0.1"
-          ? "http://127.0.0.1:5000/logs"
-          : "http://hourglass-lite-env.eba-cj44iamr.eu-west-2.elasticbeanstalk.com/logs";
-  
-        const res = await fetch(logsUrl);
+        const res = await fetch(`${logsUrlBase}/logs/${sessionId}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-  
+
         const lines = data.logs.filter(line => line && !displayedLines.includes(line));
-  
+
         for (const line of lines) {
           displayedLines.push(line);
           terminalOutput.textContent += line.trim() + "\n";
           terminalOutput.scrollTop = terminalOutput.scrollHeight;
-  
+
           if (line.toLowerCase().startsWith("actual gif size:")) {
             clearInterval(pollInterval);
             pollingLogs = false;
             logo.classList.remove("spin");
-  
+
             typeText("GIF creation complete...", () => {
               setTimeout(() => restartProgram(), 1500);
             });
@@ -440,5 +431,4 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }, 1000);
   }
-  
 });
