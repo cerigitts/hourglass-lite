@@ -2,6 +2,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const landing         = document.getElementById("landing-container");
   const appContainer    = document.getElementById("app-container");
   const insertBtn       = document.getElementById("insert-coin");
+  const devSkipBtn      = document.getElementById("dev-skip-btn");
   const panel           = document.querySelector(".console-panel");
   const output          = document.querySelector(".console-output");
   const title           = document.querySelector(".hero-title");
@@ -24,14 +25,31 @@ window.addEventListener("DOMContentLoaded", () => {
 
   insertBtn.addEventListener("click", () => {
     audioEl.play().catch(() => {});
+
+    const spriteFrame = document.getElementById("sprite-frame");
+    if (spriteFrame && spriteFrame.contentWindow) {
+      spriteFrame.contentWindow.postMessage({ type: "start-run" }, "*");
+    }
+  });
+
+  devSkipBtn.addEventListener("click", launchMainApp);
+
+  function launchMainApp() {
     landing.style.display = "none";
     appContainer.style.display = "block";
-
-    adjustContainerHeight(); // recalculate height on app start
+    adjustContainerHeight();
 
     title.style.animation = "none";
     void title.offsetWidth;
     title.style.animation = "fadeInOut 2.4s ease-in-out 1s forwards";
+  }
+
+  window.addEventListener("message", (event) => {
+    if (event.data?.type === "run-complete") {
+      launchMainApp();
+      const devBtn = document.getElementById("dev-skip-btn");
+      if (devBtn) devBtn.style.display = "none";
+    }
   });
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -313,7 +331,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
         for (const line of lines) {
           displayedLines.push(line);
-          terminalOutput.textContent += line + "\n";
+          terminalOutput.textContent += line.trim() + "\n";  // Trim whitespace here
           terminalOutput.scrollTop = terminalOutput.scrollHeight;
 
           if (line.toLowerCase().startsWith("actual gif size:")) {

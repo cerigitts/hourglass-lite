@@ -10,6 +10,22 @@
 <body>
   <div id="landing-container">
     <div id="insert-coin">INSERT COIN</div>
+
+    <iframe
+      id="sprite-frame"
+      src="/static/assets/sprite/sprite.html"
+      style="
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        pointer-events: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;">
+    </iframe>
+
+    <button id="dev-skip-btn">Dev Skip</button>
     <audio id="bg-audio" src="../static/audio/music.mp3" preload="auto" loop></audio>
   </div>
 
