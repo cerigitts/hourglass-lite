@@ -403,25 +403,29 @@ window.addEventListener("DOMContentLoaded", () => {
   function startPollingLogs() {
     pollingLogs = true;
     displayedLines = [];
-
+  
     pollInterval = setInterval(async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/logs");
+        const logsUrl = window.location.hostname === "127.0.0.1"
+          ? "http://127.0.0.1:5000/logs"
+          : "http://hourglass-lite-env.eba-cj44iamr.eu-west-2.elasticbeanstalk.com/logs";
+  
+        const res = await fetch(logsUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-
+  
         const lines = data.logs.filter(line => line && !displayedLines.includes(line));
-
+  
         for (const line of lines) {
           displayedLines.push(line);
           terminalOutput.textContent += line.trim() + "\n";
           terminalOutput.scrollTop = terminalOutput.scrollHeight;
-
+  
           if (line.toLowerCase().startsWith("actual gif size:")) {
             clearInterval(pollInterval);
             pollingLogs = false;
             logo.classList.remove("spin");
-
+  
             typeText("GIF creation complete...", () => {
               setTimeout(() => restartProgram(), 1500);
             });
@@ -436,4 +440,5 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }, 1000);
   }
+  
 });
