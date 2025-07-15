@@ -86,5 +86,9 @@ def stream_logs():
         lines = f.readlines()[-50:]
     return jsonify({"logs": lines})
 
+# Removed debug=True for production deployment
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run()
+
+# Expose application for Elastic Beanstalk
+application = app

@@ -23,9 +23,85 @@ window.addEventListener("DOMContentLoaded", () => {
   const terminalOutput  = document.getElementById("terminal-output");
   const terminalBlock   = document.querySelector(".terminal-console");
 
+  // New seamless pixel rain effect
+  (() => {
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+
+    let drops = [];
+    const maxDrops = 200;
+    const spawnPerFrame = 4;
+    const chars = ['0', '1'];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function createDrop() {
+      const isChar = Math.random() < 0.1;
+      return {
+        x: Math.floor(Math.random() * canvas.width),
+        y: 0,
+        size: isChar ? 8 : (Math.random() < 0.85 ? 1 : 2),
+        speed: 0.5 + Math.random() * 1.5,
+        flickerPhase: Math.random() * 2 * Math.PI,
+        char: isChar ? chars[Math.floor(Math.random() * chars.length)] : null
+      };
+    }
+
+    function drawDrops(time) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = 'bold 9px monospace';
+      ctx.textBaseline = 'top';
+
+      // Spawn a few new drops each frame, capped
+      for (let i = 0; i < spawnPerFrame; i++) {
+        if (drops.length < maxDrops) {
+          drops.push(createDrop());
+        }
+      }
+
+      // Move and draw all drops
+      for (const drop of drops) {
+        drop.y += drop.speed;
+
+        if (drop.y > canvas.height) {
+          drop.y = 0;
+          drop.x = Math.floor(Math.random() * canvas.width);
+          if (drop.char !== null) {
+            drop.char = chars[Math.floor(Math.random() * chars.length)];
+          }
+        }
+
+        const brightness = 0.7 + 0.3 * Math.sin(time / 500 + drop.flickerPhase);
+        ctx.fillStyle = `rgba(255,255,255,${brightness.toFixed(2)})`;
+
+        if (drop.char !== null) {
+          ctx.fillText(drop.char, drop.x, drop.y);
+        } else {
+          ctx.fillRect(drop.x, drop.y, drop.size, drop.size);
+        }
+      }
+    }
+
+    // Expose animate function so we can control when to start it
+    window.startRainAnimation = function animate(time = 0) {
+      drawDrops(time);
+      requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('resize', () => {
+      resize();
+      drops = [];
+    });
+
+    resize();
+    // No automatic start here — wait for panel animation
+  })();
+
   insertBtn.addEventListener("click", () => {
     audioEl.play().catch(() => {});
-
     const spriteFrame = document.getElementById("sprite-frame");
     if (spriteFrame && spriteFrame.contentWindow) {
       spriteFrame.contentWindow.postMessage({ type: "start-run" }, "*");
@@ -121,6 +197,9 @@ window.addEventListener("DOMContentLoaded", () => {
   panel.addEventListener("animationend", () => {
     cursor.style.display = "inline-block";
     setTimeout(startTypingSequence, 400);
+
+    // Start the rain animation now
+    window.startRainAnimation();
   });
 
   function startTypingSequence() {
@@ -331,7 +410,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
         for (const line of lines) {
           displayedLines.push(line);
-          terminalOutput.textContent += line.trim() + "\n";  // Trim whitespace here
+          terminalOutput.textContent += line.trim() + "\n";
           terminalOutput.scrollTop = terminalOutput.scrollHeight;
 
           if (line.toLowerCase().startsWith("actual gif size:")) {
