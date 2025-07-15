@@ -22,6 +22,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const audioEl         = document.querySelector("#bg-audio");
   const terminalOutput  = document.getElementById("terminal-output");
   const terminalBlock   = document.querySelector(".terminal-console");
+  const downloadBtn     = document.getElementById("download-btn");
 
   (() => {
     const canvas = document.getElementById('rain');
@@ -143,6 +144,7 @@ window.addEventListener("DOMContentLoaded", () => {
   volumeBtn.style.opacity = "0";
   terminalBlock.style.display = "none";
   terminalOutput.textContent = "";
+  downloadBtn.style.display = "none";
 
   audioEl.volume = 1;
   audioEl.loop = true;
@@ -226,31 +228,6 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if ('ontouchstart' in window) {
-    document.querySelectorAll('.icon-button').forEach(btn => {
-      btn.addEventListener('touchstart', e => e.currentTarget.classList.add('pressed'));
-      btn.addEventListener('touchend', e => e.currentTarget.classList.remove('pressed'));
-      btn.addEventListener('touchcancel', e => e.currentTarget.classList.remove('pressed'));
-    });
-  } else {
-    document.querySelectorAll('.icon-button').forEach(btn => {
-      btn.addEventListener('mousedown', e => e.currentTarget.classList.add('pressed'));
-      btn.addEventListener('mouseup', e => e.currentTarget.classList.remove('pressed'));
-      btn.addEventListener('mouseleave', e => e.currentTarget.classList.remove('pressed'));
-    });
-  }
-
-  volumeBtn.addEventListener("click", () => {
-    isMuted = !isMuted;
-    audioEl.muted = isMuted;
-    volumeOnIcon.style.display = isMuted ? "none" : "inline";
-    volumeOffIcon.style.display = isMuted ? "inline" : "none";
-  });
-
-  refreshBtn.addEventListener("click", () => {
-    restartProgram();
-  });
-
   function startSpinner() {
     logo.classList.add("spin");
   }
@@ -291,6 +268,7 @@ window.addEventListener("DOMContentLoaded", () => {
     typedText.textContent = "";
     terminalOutput.textContent = "";
     terminalBlock.style.display = "none";
+    downloadBtn.style.display = "none";
 
     typeText("Program restarting...", () => {
       setTimeout(() => {
@@ -305,16 +283,17 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function hideIphoneIcon() {
-    icons.style.opacity = "0";
-    icons.style.pointerEvents = "none";
-  }
+  folderBtn.addEventListener("click", () => fileInput.click());
+  uploadBtn.addEventListener("click", () => fileInput.click());
 
-  function showIphoneIcon() {
-    icons.style.transition = "opacity 0.5s ease-in";
-    icons.style.opacity = "1";
-    icons.style.pointerEvents = "auto";
-  }
+  fileInput.addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+      icons.style.opacity = "1";
+      return;
+    }
+    handleVideoUpload(file);
+  });
 
   function handleVideoUpload(file) {
     startSpinner();
@@ -322,7 +301,7 @@ window.addEventListener("DOMContentLoaded", () => {
     terminalBlock.style.display = "none";
 
     typeText("Uploading video...", () => {
-      hideIphoneIcon();
+      icons.style.opacity = "0";
       const formData = new FormData();
       formData.append("video", file);
 
@@ -334,14 +313,10 @@ window.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: formData,
       })
-        .then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
-        })
+        .then((res) => res.json())
         .then((data) => {
           const sessionId = data.session_id;
           typeText("Script running...", () => {
-            logo.style.display = "block";
             logo.classList.add("spin");
             terminalBlock.style.display = "block";
             startPollingLogs(sessionId);
@@ -351,43 +326,8 @@ window.addEventListener("DOMContentLoaded", () => {
           console.error("Upload error:", err);
           typeText("Upload failed...");
           stopSpinner();
-          showIphoneIcon();
+          icons.style.opacity = "1";
         });
-    });
-  }
-
-  folderBtn.addEventListener("click", () => fileInput.click());
-  uploadBtn.addEventListener("click", () => fileInput.click());
-
-  fileInput.addEventListener("change", (event) => {
-    const file = event.target.files[0];
-    if (!file) {
-      showIphoneIcon();
-      return;
-    }
-    handleVideoUpload(file);
-  });
-
-  fileInput.addEventListener("blur", () => {
-    if (!fileInput.files.length) showIphoneIcon();
-  });
-
-  const isDesktop = !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isDesktop) {
-    const dropZone = document.querySelector(".container");
-
-    dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    });
-
-    dropZone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      icons.style.transition = "none";
-      icons.style.opacity = "0";
-      icons.style.pointerEvents = "none";
-      handleVideoUpload(file);
     });
   }
 
@@ -402,11 +342,9 @@ window.addEventListener("DOMContentLoaded", () => {
     pollInterval = setInterval(async () => {
       try {
         const res = await fetch(`${logsUrlBase}/logs/${sessionId}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
         const lines = data.logs.filter(line => line && !displayedLines.includes(line));
-
         for (const line of lines) {
           displayedLines.push(line);
           terminalOutput.textContent += line.trim() + "\n";
@@ -416,12 +354,34 @@ window.addEventListener("DOMContentLoaded", () => {
             clearInterval(pollInterval);
             pollingLogs = false;
             logo.classList.remove("spin");
-
-            typeText("GIF creation complete...", () => {
-              setTimeout(() => restartProgram(), 1500);
+            terminalBlock.style.display = "none";
+          
+            typeText("Please click to download your GIF...", () => {
+              downloadBtn.style.display = "block";
+              downloadBtn.classList.add("fade-in");
+          
+              const downloadUrl = `${logsUrlBase}/download/${sessionId}`;
+              downloadBtn.onclick = (e) => {
+                e.preventDefault();
+                const a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = "hourglass.gif";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+          
+                setTimeout(() => {
+                  fetch(`${logsUrlBase}/cleanup/${sessionId}`, {
+                    method: "DELETE"
+                  }).catch(console.error);
+                  restartProgram();
+                }, 1000);
+              };
             });
+          
             break;
           }
+          
         }
       } catch (err) {
         console.error("Log polling error:", err);
@@ -431,4 +391,13 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }, 1000);
   }
+
+  refreshBtn.addEventListener("click", restartProgram);
+
+  volumeBtn.addEventListener("click", () => {
+    isMuted = !isMuted;
+    audioEl.muted = isMuted;
+    volumeOnIcon.style.display = isMuted ? "none" : "inline";
+    volumeOffIcon.style.display = isMuted ? "inline" : "none";
+  });
 });

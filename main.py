@@ -150,7 +150,7 @@ def run_pipeline():
         return
 
     GIF_OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
-    gif_path = GIF_OUTPUT_FOLDER / f"{video_name}_{int(target_fps)}fps.gif"
+    gif_path = GIF_OUTPUT_FOLDER / f"{video_name}.gif"
 
     create_gif_from_frames(
         TEMP_IMAGES_FOLDER,

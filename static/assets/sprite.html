@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Interactive Sprite Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      overflow: hidden;
+    }
+    .sprite-container {
+      width: 128px;
+      height: 128px;
+      overflow: hidden;
+      position: absolute;
+      top: 55%;
+      transform: translateY(-50%) scale(2); /* 🔥 SCALE ADDED HERE */
+      transform-origin: center; /* Keeps it balanced */
+      image-rendering: pixelated;
+      left: -128px;
+    }
+    .sprite {
+      height: 128px;
+      background-repeat: no-repeat;
+    }
+    .walk .sprite {
+      width: 1024px;
+      background-image: url("Walk.png");
+      animation: walkAnim 1.2s steps(8) infinite;
+    }
+    .idle .sprite {
+      width: 768px;
+      background-image: url("Idle.png");
+      animation: idleAnim 1s steps(6) infinite;
+    }
+    .run .sprite {
+      width: 1024px;
+      background-image: url("Run.png");
+      animation: runAnim 0.6s steps(8) infinite;
+    }
+    @keyframes walkAnim {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-1024px); }
+    }
+    @keyframes idleAnim {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-768px); }
+    }
+    @keyframes runAnim {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-1024px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="sprite-container walk" id="sprite">
+    <div class="sprite"></div>
+  </div>
+
+  <script>
+    const sprite = document.getElementById("sprite");
+    let walkDuration = 5000;
+    let walking = true;
+    let hasRun = false;
+    let idleTriggeredByClick = false;
+
+    function walkIn() {
+      sprite.className = "sprite-container walk";
+      sprite.style.left = "-128px";
+
+      const walkAnim = sprite.animate([
+        { left: "-128px" },
+        { left: "calc(50% - 64px)" }
+      ], {
+        duration: walkDuration,
+        fill: "forwards",
+        easing: "linear"
+      });
+
+      walkAnim.onfinish = () => {
+        walking = false;
+        if (!idleTriggeredByClick) {
+          sprite.className = "sprite-container idle";
+        }
+      };
+    }
+
+    function triggerIdleThenRun() {
+      if (hasRun) return;
+      hasRun = true;
+
+      const computedLeft = getComputedStyle(sprite).left;
+      sprite.style.left = computedLeft;
+      sprite.getAnimations().forEach(anim => anim.cancel());
+
+      sprite.className = "sprite-container idle";
+
+      setTimeout(() => {
+        sprite.className = "sprite-container run";
+
+        const currentLeft = sprite.offsetLeft;
+        const vw = window.innerWidth;
+        const remaining = vw - currentLeft;
+        const duration = (remaining / vw) * 1500;
+
+        sprite.animate([
+          { left: `${currentLeft}px` },
+          { left: `${vw + 128}px` }
+        ], {
+          duration,
+          fill: "forwards",
+          easing: "linear"
+        }).onfinish = () => {
+          window.parent.postMessage({ type: "run-complete" }, "*");
+        };
+      }, 1000);
+    }
+
+    // Listen for parent signal
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "start-run") {
+        idleTriggeredByClick = true;
+        triggerIdleThenRun();
+      }
+    });
+
+    // Start walking on load
+    walkIn();
+  </script>
+</body>
+</html>

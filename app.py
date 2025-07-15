@@ -1,4 +1,7 @@
-from flask import Flask, request, jsonify, render_template
+# app.py
+# flask backend for video upload, gif creation, and session-based log handling
+
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from pathlib import Path
 from werkzeug.utils import secure_filename
@@ -27,6 +30,18 @@ def landing():
 @app.route("/index")
 def index():
     return render_template("index.html")
+
+@app.route("/images/gif/<filename>")
+def serve_gif(filename):
+    return send_from_directory(GIF_OUTPUT_FOLDER, filename)
+
+@app.route("/download/<session_id>")
+def download_gif(session_id):
+    gif_filename = f"{session_id}.gif"
+    gif_path = GIF_OUTPUT_FOLDER / gif_filename
+    if not gif_path.exists():
+        return "GIF not found", 404
+    return send_from_directory(GIF_OUTPUT_FOLDER, gif_filename, as_attachment=True)
 
 def allowed_file(filename):
     return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
@@ -59,16 +74,13 @@ def run_pipeline_async(session_id, filename):
 @app.route("/upload", methods=["POST"])
 def upload_video():
     if "video" not in request.files:
-        print("[upload] no 'video' in request.files")
         return jsonify({"error": "No video file provided"}), 400
 
     file = request.files["video"]
     if file.filename == "":
-        print("[upload] empty filename")
         return jsonify({"error": "Empty filename"}), 400
 
     if not allowed_file(file.filename):
-        print(f"[upload] unsupported file type: {file.filename}")
         return jsonify({"error": "Unsupported file type"}), 400
 
     ext = Path(file.filename).suffix.lower()
@@ -76,20 +88,9 @@ def upload_video():
     saved_name = f"{session_id}"
     save_path = UPLOAD_FOLDER / saved_name
 
-    if not UPLOAD_FOLDER.exists():
-        print("[upload] videos/ folder missing, creating it now...")
-        UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
-    else:
-        print("[upload] videos/ folder exists")
-
-    print(f"[upload] trying to save: {file.filename}")
-    print(f"[upload] saving to: {save_path.resolve()}")
-
     try:
         file.save(save_path)
-        print("[upload] save succeeded.")
     except Exception as e:
-        print(f"[upload] save FAILED: {e}")
         return jsonify({"error": "Save failed"}), 500
 
     run_pipeline_async(session_id, saved_name)
@@ -105,7 +106,6 @@ def stream_logs(session_id):
         lines = f.readlines()[-50:]
     return jsonify({"logs": lines})
 
-# Removed debug=True for production deployment
 if __name__ == "__main__":
     app.run()
 
