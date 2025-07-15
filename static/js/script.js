@@ -336,7 +336,10 @@ window.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData();
       formData.append("video", file);
 
-      fetch("http://127.0.0.1:5000/upload", {
+      // Dynamically use the correct URL based on the environment
+      const apiUrl = window.location.hostname === "127.0.0.1" ? "http://127.0.0.1:5000" : "http://hourglass-lite-env.eba-cj44iamr.eu-west-2.elasticbeanstalk.com";
+
+      fetch(`${apiUrl}/upload`, {
         method: "POST",
         body: formData,
       })

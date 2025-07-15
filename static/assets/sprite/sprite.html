@@ -19,36 +19,42 @@
       transform: translateY(-50%) scale(2.25);
       transform-origin: center;
       image-rendering: pixelated;
-      left: -128px
+      left: -128px;
     }
 
     .sprite {
       height: 128px;
       background-repeat: no-repeat;
     }
+
     .walk .sprite {
       width: 1024px;
       background-image: url("Walk.png");
       animation: walkAnim 1.2s steps(8) infinite;
     }
+
     .idle .sprite {
       width: 768px;
       background-image: url("Idle.png");
       animation: idleAnim 1s steps(6) infinite;
     }
+
     .run .sprite {
       width: 1024px;
       background-image: url("Run.png");
       animation: runAnim 0.6s steps(8) infinite;
     }
+
     @keyframes walkAnim {
       from { transform: translateX(0); }
       to   { transform: translateX(-1024px); }
     }
+
     @keyframes idleAnim {
       from { transform: translateX(0); }
       to   { transform: translateX(-768px); }
     }
+
     @keyframes runAnim {
       from { transform: translateX(0); }
       to   { transform: translateX(-1024px); }
@@ -92,8 +98,9 @@
       if (hasRun) return;
       hasRun = true;
 
-      const computedLeft = getComputedStyle(sprite).left;
-      sprite.style.left = computedLeft;
+      // Use pixel-accurate layout value
+      sprite.style.left = `${sprite.offsetLeft}px`;
+
       sprite.getAnimations().forEach(anim => anim.cancel());
 
       sprite.className = "sprite-container idle";
