@@ -29,20 +29,19 @@
 }
 
 #download-btn {
-  position: absolute;
-  top: 50%;
+  position: fixed;
+  top: 50vh; /* vertical alignment */
   left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 90px;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-  width: 90px;
-  height: 90px;
   display: none;
+  z-index: 1000;
 }
-
 
 #download-btn.fade-in {
   animation: fadeInButton 1s ease-in-out forwards;
@@ -53,12 +52,6 @@
   width: 90px;
   height: 90px;
   fill: #eee;
-}
-
-#download-btn.pressed {
-  transform: scale(0.9);
-  opacity: 0.8;
-  transition: transform 0.1s ease, opacity 0.1s ease;
 }
 
 /* The rest of your original styles remain unchanged */
@@ -255,13 +248,12 @@ html, .container {
 }
 
 .input-icons {
-  position: absolute;
-  top: 28%;
-  height: 67%;
-  width: 100%;
+  position: fixed;
+  top: 40vh;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   gap: 10px;
   opacity: 0;
@@ -294,6 +286,7 @@ html, .container {
   width: 90px;
   height: 90px;
   transform: scale(1);
+  pointer-events: auto;
 }
 
 .icon-button svg {
@@ -306,6 +299,14 @@ html, .container {
   transform: scale(0.9);
   opacity: 0.8;
   transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.icon-button[disabled],
+.icon-button.inactive,
+.icon-button[aria-disabled="true"] {
+  pointer-events: none;
+  cursor: default;
+  opacity: 0.5;
 }
 
 @keyframes floatDown {
@@ -405,4 +406,35 @@ html, .container {
   background-color: #111;
   z-index: -1;
   pointer-events: none;
+}
+
+/* blinking file size warning style */
+.file-size-warning {
+  font-family: 'VT323', monospace;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: blink 1.2s step-start infinite;
+  margin-top: 10px;
+  user-select: none;
+  text-align: center;
+}
+
+/* reuse existing blink keyframes */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* responsive fix for white console text wrapping */
+@media (max-width: 480px) {
+  .console-output {
+    padding: 12px 10px;
+    font-size: 1.4rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
 }

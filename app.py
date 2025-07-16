@@ -1,13 +1,10 @@
-# app.py
-# flask backend for video upload, gif creation, and session-based log handling
-
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from pathlib import Path
-from werkzeug.utils import secure_filename
 import subprocess
 import threading
 import uuid
+import shutil
 
 app = Flask(__name__, static_folder="static")
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -22,6 +19,9 @@ ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 GIF_OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 LOG_FOLDER.mkdir(parents=True, exist_ok=True)
+
+# max upload size 100 MB
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
 @app.route("/")
 def landing():
@@ -52,18 +52,14 @@ def run_pipeline_async(session_id, filename):
     def target():
         with open(log_path, "w") as log_file:
             process = subprocess.Popen(
-                ["python3", "main.py"],
-                stdin=subprocess.PIPE,
+                ["python3", "main.py", session_id, filename],
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
                 text=True
             )
-            process.stdin.write(filename + "\n")
-            process.stdin.flush()
-            process.stdin.close()
             process.wait()
 
-        # cleanup video after processing
+        # cleanup uploaded video after processing
         uploaded_file = UPLOAD_FOLDER / filename
         if uploaded_file.exists():
             uploaded_file.unlink()
@@ -83,7 +79,14 @@ def upload_video():
     if not allowed_file(file.filename):
         return jsonify({"error": "Unsupported file type"}), 400
 
-    ext = Path(file.filename).suffix.lower()
+    # manual size check (optional, since MAX_CONTENT_LENGTH is set)
+    file.seek(0, 2)
+    size = file.tell()
+    file.seek(0)
+    max_size_bytes = 100 * 1024 * 1024
+    if size > max_size_bytes:
+        return jsonify({"error": "File too large"}), 413
+
     session_id = str(uuid.uuid4())
     saved_name = f"{session_id}"
     save_path = UPLOAD_FOLDER / saved_name
@@ -106,8 +109,32 @@ def stream_logs(session_id):
         lines = f.readlines()[-50:]
     return jsonify({"logs": lines})
 
+@app.route("/cleanup/<session_id>", methods=["DELETE"])
+def cleanup_files(session_id):
+    # delete video
+    video_file = UPLOAD_FOLDER / session_id
+    if video_file.exists():
+        video_file.unlink()
+
+    # delete gif
+    gif_file = GIF_OUTPUT_FOLDER / f"{session_id}.gif"
+    if gif_file.exists():
+        gif_file.unlink()
+
+    # delete log
+    log_file = LOG_FOLDER / f"{session_id}.log"
+    if log_file.exists():
+        log_file.unlink()
+
+    # delete temp image folder for this session, if used
+    temp_folder = BASE_DIR / "images" / "temp" / session_id
+    if temp_folder.exists() and temp_folder.is_dir():
+        shutil.rmtree(temp_folder)
+
+    return jsonify({"message": f"Cleanup done for session {session_id}"}), 200
+
 if __name__ == "__main__":
     app.run()
 
-# Expose application for Elastic Beanstalk
+# expose application for Elastic Beanstalk
 application = app

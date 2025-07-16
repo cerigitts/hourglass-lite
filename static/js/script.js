@@ -23,6 +23,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const terminalOutput  = document.getElementById("terminal-output");
   const terminalBlock   = document.querySelector(".terminal-console");
   const downloadBtn     = document.getElementById("download-btn");
+  const dropZone        = document.querySelector(".container");
 
   (() => {
     const canvas = document.getElementById('rain');
@@ -94,6 +95,16 @@ window.addEventListener("DOMContentLoaded", () => {
     resize();
   })();
 
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    folderBtn.style.display = "none";
+    uploadBtn.style.display = "inline-block";
+  } else {
+    uploadBtn.style.display = "none";
+    folderBtn.style.display = "inline-block";
+  }
+
   insertBtn.addEventListener("click", () => {
     audioEl.play().catch(() => {});
     const spriteFrame = document.getElementById("sprite-frame");
@@ -120,14 +131,6 @@ window.addEventListener("DOMContentLoaded", () => {
       if (devBtn) devBtn.style.display = "none";
     }
   });
-
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isMobile) {
-    folderBtn.style.display = "none";
-    uploadBtn.style.display = "inline-block";
-  } else {
-    uploadBtn.style.display = "none";
-  }
 
   let isTyping = false;
   let isMuted = false;
@@ -262,6 +265,9 @@ window.addEventListener("DOMContentLoaded", () => {
     folderBtn.blur();
     uploadBtn.blur();
 
+    // reset file input value so same file can be selected again
+    fileInput.value = '';
+
     videoOverlay.style.display = "none";
     output.style.visibility = "visible";
     cursor.style.display = "inline-block";
@@ -270,9 +276,13 @@ window.addEventListener("DOMContentLoaded", () => {
     terminalBlock.style.display = "none";
     downloadBtn.style.display = "none";
 
+    const restartMessage = isMobile
+      ? "Please select video source..."
+      : "Please select video source or drop file into screen...";
+
     typeText("Program restarting...", () => {
       setTimeout(() => {
-        typeText("Please select video source...", () => {
+        typeText(restartMessage, () => {
           icons.style.transition = "opacity 0.5s ease-in";
           icons.style.opacity = "1";
           icons.style.pointerEvents = "auto";
@@ -283,6 +293,21 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (!isMobile && dropZone) {
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleVideoUpload(e.dataTransfer.files[0]);
+        e.dataTransfer.clearData();
+      }
+    });
+  }
+
   folderBtn.addEventListener("click", () => fileInput.click());
   uploadBtn.addEventListener("click", () => fileInput.click());
 
@@ -290,6 +315,26 @@ window.addEventListener("DOMContentLoaded", () => {
     const file = event.target.files[0];
     if (!file) {
       icons.style.opacity = "1";
+      return;
+    }
+
+    const maxSizeBytes = 100 * 1024 * 1024; // 100 MB
+
+    if (file.size > maxSizeBytes) {
+      typeText("File size exceeds 100MB limit...", () => {
+        setTimeout(() => {
+          typeText(
+            isMobile
+              ? "Please select video source..."
+              : "Please select video source or drop file into screen...",
+            () => {
+              icons.style.transition = "opacity 0.5s ease-in";
+              icons.style.opacity = "1";
+              isTyping = false;
+            }
+          );
+        }, 1500);
+      });
       return;
     }
     handleVideoUpload(file);
@@ -355,11 +400,11 @@ window.addEventListener("DOMContentLoaded", () => {
             pollingLogs = false;
             logo.classList.remove("spin");
             terminalBlock.style.display = "none";
-          
+
             typeText("Please click to download your GIF...", () => {
               downloadBtn.style.display = "block";
               downloadBtn.classList.add("fade-in");
-          
+
               const downloadUrl = `${logsUrlBase}/download/${sessionId}`;
               downloadBtn.onclick = (e) => {
                 e.preventDefault();
@@ -369,7 +414,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-          
+
                 setTimeout(() => {
                   fetch(`${logsUrlBase}/cleanup/${sessionId}`, {
                     method: "DELETE"
@@ -378,10 +423,10 @@ window.addEventListener("DOMContentLoaded", () => {
                 }, 1000);
               };
             });
-          
+
             break;
           }
-          
+
         }
       } catch (err) {
         console.error("Log polling error:", err);

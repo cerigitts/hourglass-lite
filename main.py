@@ -1,6 +1,3 @@
-# main.py
-# gif creation pipeline with dynamic model loading, debug mode, and conditional model updating
-
 import shutil
 import numpy as np
 import os
@@ -12,7 +9,6 @@ from pathlib import Path
 from utils.frame_extractor import extract_frames
 from utils.gif_encoder import create_gif_from_frames
 
-# auto-flush print
 import functools
 print = functools.partial(print, flush=True)
 
@@ -20,16 +16,11 @@ CONFIG_PATH = Path("config/model_coeffs.json")
 LOG_PATH = Path("logs/gif_data_log.csv")
 TRACKER_PATH = Path("logs/last_update.txt")
 
-TEMP_IMAGES_FOLDER = Path("images/temp")
 GIF_OUTPUT_FOLDER = Path("images/gif")
-DEV_VIDEO_PATH = Path("dev_assets/test_clip.mov")  # debug asset
-
 MAX_FPS = 50
 MAX_GIF_SIZE_MB = 20
 UPDATE_THRESHOLD = 5
-
-USE_DEV_MODE = sys.stdin.isatty()
-DEBUG = False  # toggle this to True to see internal logs
+DEBUG = False
 
 def dbg(msg):
     if DEBUG:
@@ -83,26 +74,28 @@ def update_tracker():
         f.write(str(current))
 
 def run_pipeline():
-    if USE_DEV_MODE:
-        video_path = DEV_VIDEO_PATH
-        video_name = video_path.stem
-        dbg(f"debug mode: using {video_path.name}")
-    else:
-        video_path = Path(sys.stdin.readline().strip())
-        video_name = video_path.stem
-        dbg(f"received filename: {video_name}")
-        dbg(f"resolved full path: {video_path.resolve()}")
-        dbg(f"exists? {video_path.exists()}")
-        dbg(f"videos_folder will be: videos/")
+    if len(sys.argv) != 3:
+        print("Usage: python3 main.py <session_id> <filename>")
+        sys.exit(1)
 
-    dbg(f"calling extract_frames with: {video_name}")
+    session_id = sys.argv[1]
+    filename = sys.argv[2]
+
+    temp_images_folder = Path("images") / "temp" / session_id
+    temp_images_folder.mkdir(parents=True, exist_ok=True)
+    GIF_OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+
+    # Determine videos folder path
+    videos_folder = Path("videos")
+
     info = extract_frames(
-        video_name,
-        images_folder=TEMP_IMAGES_FOLDER,
-        videos_folder=Path("videos") if not USE_DEV_MODE else DEV_VIDEO_PATH.parent
+        filename,
+        images_folder=temp_images_folder,
+        videos_folder=videos_folder
     )
 
     if not info:
+        print("Failed to extract frames.")
         return
 
     a, b, c = load_model_coefficients()
@@ -126,8 +119,10 @@ def run_pipeline():
     else:
         print(f"\nestimated gif size at {int(target_fps)} fps: {est_size:.2f} mb (within limit)")
 
-    if TEMP_IMAGES_FOLDER.exists():
-        shutil.rmtree(TEMP_IMAGES_FOLDER)
+    # Clear any previous temp for this session
+    if temp_images_folder.exists():
+        shutil.rmtree(temp_images_folder)
+    temp_images_folder.mkdir(parents=True, exist_ok=True)
 
     selected = list(np.linspace(
         0, info["frame_count"] - 1,
@@ -135,26 +130,25 @@ def run_pipeline():
         dtype=int
     ))
 
-    dbg("calling extract_frames again with selected frames")
     info = extract_frames(
-        video_name,
-        images_folder=TEMP_IMAGES_FOLDER,
+        filename,
+        images_folder=temp_images_folder,
         selected_indices=selected,
-        videos_folder=Path("videos") if not USE_DEV_MODE else DEV_VIDEO_PATH.parent
+        videos_folder=videos_folder
     )
 
     print(f"expected frames: {len(selected)}")
     print(f"actual extracted: {len(info['frame_files'])}")
 
     if not info:
+        print("No frames extracted in second pass.")
         return
 
-    GIF_OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
-    gif_path = GIF_OUTPUT_FOLDER / f"{video_name}.gif"
+    gif_path = GIF_OUTPUT_FOLDER / f"{session_id}.gif"
 
     create_gif_from_frames(
-        TEMP_IMAGES_FOLDER,
-        video_name,
+        temp_images_folder,
+        session_id,
         info["frame_files"],
         target_fps,
         output_path=gif_path
@@ -163,15 +157,15 @@ def run_pipeline():
     actual_size_mb = os.path.getsize(gif_path) / (1024 * 1024)
     print(f"actual gif size: {actual_size_mb:.2f} mb")
 
-    log_gif_data(video_name, target_fps, raw_size_mb, actual_size_mb)
+    log_gif_data(session_id, target_fps, raw_size_mb, actual_size_mb)
 
     if should_update_model():
         print("triggering model updater...")
         subprocess.run([sys.executable, "utils/model_updater.py"])
         update_tracker()
 
-    if TEMP_IMAGES_FOLDER.exists():
-        shutil.rmtree(TEMP_IMAGES_FOLDER)
+    if temp_images_folder.exists():
+        shutil.rmtree(temp_images_folder)
 
 if __name__ == "__main__":
     run_pipeline()
